@@ -4,6 +4,7 @@ import os
 
 app = Flask(__name__)
 
+# Your RapidAPI Key
 API_KEY = "b031fa19e3msh9d1756d685e653bp16f1dfjsnd18514090916"
 
 @app.route("/")
@@ -16,7 +17,18 @@ def home():
         url = "https://jsearch.p.rapidapi.com/search"
 
         querystring = {
-            "query": "QA Automation Engineer jobs in India",
+            "query": """
+            ("Quality Automation Engineer" OR
+             "Python Automation Test Engineer" OR
+             "SDET" OR
+             "QA Engineer" OR
+             "AI QA Engineer")
+
+             AND ("3 years" OR "3+ years" OR "4 years")
+
+             AND (Pune OR Noida OR "New Delhi" OR Mumbai OR Kolkata OR Gurgaon OR Chennai OR Bhubaneswar OR Ahmedabad)
+            """,
+
             "page": "1",
             "num_pages": "1"
         }
@@ -33,7 +45,7 @@ def home():
             timeout=20
         )
 
-        print(response.status_code)
+        print("STATUS CODE:", response.status_code)
         print(response.text)
 
         data = response.json()
@@ -44,7 +56,7 @@ def home():
 
                 jobs.append({
                     "title": item.get("job_title", "No Title"),
-                    "company": item.get("employer_name", "Unknown"),
+                    "company": item.get("employer_name", "Unknown Company"),
                     "location": item.get("job_city", "India"),
                     "link": item.get("job_apply_link", "#"),
                     "source": item.get("job_publisher", "JSearch")
