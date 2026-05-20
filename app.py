@@ -10,21 +10,47 @@ def home():
 
     jobs = []
 
-    # Fetch Naukri Jobs
+    # Try fetching Indeed jobs
     try:
-        naukri_jobs = fetch_naukri_jobs("qa automation engineer")
-        jobs.extend(naukri_jobs)
-    except Exception as e:
-        print("Naukri Error:", e)
-
-    # Fetch Indeed Jobs
-    try:
-        indeed_jobs = fetch_indeed_jobs("AI QA Engineer")
+        indeed_jobs = fetch_indeed_jobs("software engineer")
         jobs.extend(indeed_jobs)
     except Exception as e:
         print("Indeed Error:", e)
 
-    # Remove duplicate jobs
+    # Try fetching Naukri jobs
+    try:
+        naukri_jobs = fetch_naukri_jobs("software engineer")
+        jobs.extend(naukri_jobs)
+    except Exception as e:
+        print("Naukri Error:", e)
+
+    # Fallback demo jobs if scraping fails
+    if len(jobs) == 0:
+        jobs = [
+            {
+                "title": "AI QA Engineer",
+                "company": "Google",
+                "location": "Remote",
+                "link": "https://careers.google.com",
+                "source": "Demo"
+            },
+            {
+                "title": "Software Test Engineer",
+                "company": "Infosys",
+                "location": "Bangalore",
+                "link": "https://www.infosys.com/careers",
+                "source": "Demo"
+            },
+            {
+                "title": "Automation QA Engineer",
+                "company": "TCS",
+                "location": "Hyderabad",
+                "link": "https://www.tcs.com/careers",
+                "source": "Demo"
+            }
+        ]
+
+    # Remove duplicates
     unique_jobs = []
     seen = set()
 
