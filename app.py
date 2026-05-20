@@ -1,67 +1,47 @@
 from flask import Flask, render_template
-from scrapers.naukri import fetch_naukri_jobs
-from scrapers.indeed import fetch_indeed_jobs
+import requests
 import os
 
 app = Flask(__name__)
 
+API_KEY = "b031fa19e3msh9d1756d685e653bp16f1dfjsnd18514090916"
+
 @app.route('/')
 def home():
 
+    url = "https://jsearch.p.rapidapi.com/search-v2"
+
+    querystring = {
+        "query": "QA Automation Engineer jobs in India",
+        "num_pages": "1",
+        "country": "in",
+        "date_posted": "all"
+    }
+
+    headers = {
+        "x-rapidapi-key": API_KEY,
+        "x-rapidapi-host": "jsearch.p.rapidapi.com"
+    }
+
+    response = requests.get(url, headers=headers, params=querystring)
+
     jobs = []
 
-    # Try fetching Indeed jobs
-    try:
-        indeed_jobs = fetch_indeed_jobs("software engineer")
-        jobs.extend(indeed_jobs)
-    except Exception as e:
-        print("Indeed Error:", e)
+    if response.status_code == 200:
 
-    # Try fetching Naukri jobs
-    try:
-        naukri_jobs = fetch_naukri_jobs("software engineer")
-        jobs.extend(naukri_jobs)
-    except Exception as e:
-        print("Naukri Error:", e)
+        data = response.json()
 
-    # Fallback demo jobs if scraping fails
-    if len(jobs) == 0:
-        jobs = [
-            {
-                "title": "AI QA Engineer",
-                "company": "Google",
-                "location": "Remote",
-                "link": "https://careers.google.com",
-                "source": "Demo"
-            },
-            {
-                "title": "Software Test Engineer",
-                "company": "Infosys",
-                "location": "Bangalore",
-                "link": "https://www.infosys.com/careers",
-                "source": "Demo"
-            },
-            {
-                "title": "Automation QA Engineer",
-                "company": "TCS",
-                "location": "Hyderabad",
-                "link": "https://www.tcs.com/careers",
-                "source": "Demo"
-            }
-        ]
+        for item in data.get("data", []):
 
-    # Remove duplicates
-    unique_jobs = []
-    seen = set()
+            jobs.append({
+                "title": item.get("job_title", "No Title"),
+                "company": item.get("employer_name", "Unknown"),
+                "location": item.get("job_city", "India"),
+                "link": item.get("job_apply_link", "#"),
+                "source": item.get("job_publisher", "JSearch")
+            })
 
-    for job in jobs:
-        key = (job['title'], job['company'])
-
-        if key not in seen:
-            seen.add(key)
-            unique_jobs.append(job)
-
-    return render_template("index.html", jobs=unique_jobs)
+    return render_template("index.html", jobs=jobs)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
