@@ -1,36 +1,35 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 import requests
 import os
 
 app = Flask(__name__)
 
-# Your RapidAPI Key
 API_KEY = "b031fa19e3msh9d1756d685e653bp16f1dfjsnd18514090916"
 
-@app.route("/")
+@app.route("/", methods=["GET", "POST"])
 def home():
 
     jobs = []
+
+    # Default search values
+    role = "QA Engineer"
+    location = "India"
+
+    # User search
+    if request.method == "POST":
+        role = request.form.get("role")
+        location = request.form.get("location")
 
     try:
 
         url = "https://jsearch.p.rapidapi.com/search"
 
+        query = f"{role} jobs in {location}"
+
         querystring = {
-            "query": """
-            ("Quality Automation Engineer" OR
-             "Python Automation Test Engineer" OR
-             "SDET" OR
-             "QA Engineer" OR
-             "AI QA Engineer")
-
-             AND ("3 years" OR "3+ years" OR "4 years")
-
-             AND (Pune OR Noida OR "New Delhi" OR Mumbai OR Kolkata OR Gurgaon OR Chennai OR Bhubaneswar OR Ahmedabad)
-            """,
-
+            "query": query,
             "page": "1",
-            "num_pages": "1"
+            "num_pages": "5"
         }
 
         headers = {
@@ -42,11 +41,8 @@ def home():
             url,
             headers=headers,
             params=querystring,
-            timeout=20
+            timeout=30
         )
-
-        print("STATUS CODE:", response.status_code)
-        print(response.text)
 
         data = response.json()
 
@@ -65,7 +61,12 @@ def home():
     except Exception as e:
         print("ERROR:", e)
 
-    return render_template("index.html", jobs=jobs)
+    return render_template(
+        "index.html",
+        jobs=jobs,
+        role=role,
+        location=location
+    )
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
