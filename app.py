@@ -6,35 +6,24 @@ app = Flask(__name__)
 
 API_KEY = "b031fa19e3msh9d1756d685e653bp16f1dfjsnd18514090916"
 
-@app.route("/", methods=["GET", "POST"])
-def home():
+headers = {
+    "X-RapidAPI-Key": API_KEY,
+    "X-RapidAPI-Host": "jsearch.p.rapidapi.com"
+}
 
-    jobs = []
+def fetch_jobs(search_query):
 
-    # Default search values
-    role = "QA Engineer"
-    location = "India"
+    all_jobs = []
 
-    # User search
-    if request.method == "POST":
-        role = request.form.get("role")
-        location = request.form.get("location")
-
-    try:
+    # Fetch multiple pages dynamically
+    for page in range(1, 6):
 
         url = "https://jsearch.p.rapidapi.com/search"
 
-        query = f"{role} jobs in {location}"
-
         querystring = {
-            "query": query,
-            "page": "1",
-            "num_pages": "5"
-        }
-
-        headers = {
-            "X-RapidAPI-Key": API_KEY,
-            "X-RapidAPI-Host": "jsearch.p.rapidapi.com"
+            "query": search_query,
+            "page": str(page),
+            "num_pages": "1"
         }
 
         response = requests.get(
@@ -44,22 +33,96 @@ def home():
             timeout=30
         )
 
-        data = response.json()
+        if response.status_code == 200:
 
-        if "data" in data:
+            data = response.json()
 
-            for item in data["data"]:
+            if "data" in data:
 
-                jobs.append({
-                    "title": item.get("job_title", "No Title"),
-                    "company": item.get("employer_name", "Unknown Company"),
-                    "location": item.get("job_city", "India"),
-                    "link": item.get("job_apply_link", "#"),
-                    "source": item.get("job_publisher", "JSearch")
-                })
+                for item in data["data"]:
 
-    except Exception as e:
-        print("ERROR:", e)
+                    all_jobs.append({
+                        "title": item.get("job_title", "No Title"),
+                        "company": item.get("employer_name", "Unknown"),
+                        "location": item.get("job_city", "India"),
+                        "link": item.get("job_apply_link", "#"),
+                        "source": item.get("job_publisher", "JSearch")
+                    })
+
+    # Remove duplicates
+    unique_jobs = []
+    seen = set()
+
+    for job in all_jobs:
+
+        key = (
+            job["title"],
+            job["company"]
+        )
+
+        if key not in seen:
+            seen.add(key)
+            unique_jobs.append(job)
+
+    return unique_jobs
+
+
+@app.route("/", methods=["GET", "POST"])
+def home():
+
+    role = ""
+    location = ""
+
+    # Default live homepage jobs
+    homepage_query = """
+    QA Engineer OR
+    SDET OR
+    Automation Test Engineer OR
+    Python Automation Engineer OR
+    AI QA Engineer
+    """
+
+    jobs = fetch_jobs(homepage_query)
+
+    # User Search
+    if request.method == "POST":
+
+        role = request.form.get("role")
+        location = request.form.get("location")
+
+        if role and location:
+            custom_query = f"{role} jobs in {location}"
+
+        elif role:
+            custom_query = f"{role} jobs"
+
+        elif location:
+            custom_query = f"jobs in {location}"
+
+        else:
+            custom_query = homepage_query
+
+        searched_jobs = fetch_jobs(custom_query)
+
+        # Add searched jobs also
+        jobs.extend(searched_jobs)
+
+        # Remove duplicates again
+        unique_jobs = []
+        seen = set()
+
+        for job in jobs:
+
+            key = (
+                job["title"],
+                job["company"]
+            )
+
+            if key not in seen:
+                seen.add(key)
+                unique_jobs.append(job)
+
+        jobs = unique_jobs
 
     return render_template(
         "index.html",
@@ -68,6 +131,12 @@ def home():
         location=location
     )
 
+
 if __name__ == "__main__":
+
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+
+    app.run(
+        host="0.0.0.0",
+        port=port
+    )
