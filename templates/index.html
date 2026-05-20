@@ -1,13 +1,31 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Job Finder</title>
+    <title>AI Job Finder</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
 
-<h1>Real-Time Job Finder</h1>
+<h1>AI Job Finder</h1>
+
+<form method="POST" class="search-box">
+
+    <input type="text"
+           name="role"
+           placeholder="Enter Job Role"
+           value="{{ role }}">
+
+    <input type="text"
+           name="location"
+           placeholder="Enter Location"
+           value="{{ location }}">
+
+    <button type="submit">Search Jobs</button>
+
+</form>
+
+<h3>Total Jobs Found: {{ jobs|length }}</h3>
 
 <div class="container">
 
